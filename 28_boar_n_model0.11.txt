@@ -1,0 +1,74 @@
+#平成26年度東北地方におけるニホンジカとイノシシの個体数推定業務
+#宮城県ニホンジカ個体数推定モデル（推測）
+
+
+model{
+
+		log(r) <- log.r
+		log.r ~ dnorm(0.322 , 34.483)				#自然増加率
+		B <- (r-1) / (k*FA[10])					#B値
+
+	for(i in 2:NY){
+
+		#過程モデル
+		n[i] <- max.n[i] - CAPT[i]				#i年個体数 = i年増加個体数-捕獲数
+		max.n[i] ~ dpois(mu.n[i])I(min.n[i],)			#i年増加個体数
+		min.n[i] <- 1 +  CAPT[i]				#捕獲前最低個体数
+		mu.n[i] <- r * n[i-1]/(1 + B*n[i-1])			#増加後平均個体数
+
+
+		#狩猟捕獲数の観測モデル
+		ryo[i] ~ dpois(mu.ryo[i])				#（確率的）捕獲数
+		mu.ryo[i] ~ dlnorm(mean.mu.ryo[i] ,tau.ryo)	#（確率的）捕獲数平均値
+		mean.mu.ryo[i] <- prp * n[i]			#狩猟捕獲数平均値
+
+		#許可捕獲の捕獲数の観測モデル
+		kyo[i] ~ dpois(mu.kyo[i])
+		mu.kyo[i] ~ dlnorm(mean.mu.kyo[i],tau.kyo)
+		mean.mu.kyo[i] <- pkp[i] * n[i]
+		logit(pkp[i]) <- lpkp[i]				#捕獲率ロジット変換
+		lpkp[i] ~ dnorm(lpkp[i-1],tau.ran.pkp)			#（確率的）i-1年捕獲率からi年捕獲率
+
+		#銃登録者あたりの捕獲数観測モデル
+		jcpue[i] ~ dpois(mu.jcpue[i])		#（確率的）捕獲数平均値
+		mu.jcpue[i] ~ dlnorm(pre.mu.jcpue[i],tau.jcpue)
+		pre.mu.jcpue[i] <- pjp * n[i] * jperson[i] / FA[i]		#捕獲数平均値
+
+		#わな登録者あたりの捕獲数観測モデル
+		wcpue[i] ~ dpois(mu.wcpue[i])		#（確率的）捕獲数平均値
+		mu.wcpue[i] ~ dlnorm(pre.mu.wcpue[i],tau.wcpue)
+		pre.mu.wcpue[i] <- pwp * n[i] * wperson[i] / FA[i]		#捕獲数平均値
+
+	}
+
+
+	#事前分布
+
+	n[1] <- trunc(n0)
+	log(n0) <- log.n0
+	log.n0 ~ dnorm(6.907 , 0.3)I(min.log.n0,)			#初年度個体数
+	min.log.n0 <- log(CAPT[1]-1)					#初年度個体数の最低値を捕獲数-1に設定
+	log(k) <- log.k
+	log.k ~ dnorm(4.605 , 1)					#環境収容力（対数値）
+
+	logit(prp) <- lprp
+	lprp ~ dnorm(0,0.001)
+	lpkp[1] <- lpkp1
+	lpkp1 ~ dnorm(0,0.001)						#初年度狩猟捕獲率
+
+	log(pjp) <- lpjp
+	lpjp ~ dnorm(0,0.001)
+	log(pwp) <- lpwp
+	lpwp ~ dnorm(0,0.001)
+
+	tau.ryo ~ dgamma(0.001,0.001)				#狩猟捕獲率の精度
+	tau.kyo ~ dgamma(0.001,0.001)
+	tau.jcpue ~ dgamma(0.001,0.001)
+	tau.wcpue ~ dgamma(0.001,0.001)
+
+	tau.ran.pkp ~ dgamma(0.001,0.001)				#ランダムウォークの精度
+
+
+
+
+}
