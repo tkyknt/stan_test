@@ -36,4 +36,13 @@ list.data <- list(
 )
 list.data
 
+set.seed(1)
 
+boar_model0.0.1 <- stan(
+  file='niigata0.0.1.stan',
+  data=list.data,
+  iter=1500,
+  warmup=500,
+  thin=1,
+  chains=3
+)
